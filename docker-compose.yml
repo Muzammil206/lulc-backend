@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  lulc-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - GEE_KEY_FILE=/app/gee-service-account.json
+      - FRONTEND_URL=http://localhost:3000
+      - MAX_CLOUD_COVER=30
+      - DEFAULT_BUFFER_METRES=15000
+    volumes:
+      # Mount gee-service-account.json from host if not in image
+      - ./gee-service-account.json:/app/gee-service-account.json:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "bun", "run", "-e", "const res = await fetch('http://localhost:3001/health'); process.exit(res.ok ? 0 : 1)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Optional: If you have a frontend service, add it here
+  # lulc-frontend:
+  #   build:
+  #     context: ../lulc-frontend  # path to your Next.js frontend
+  #     dockerfile: Dockerfile
+  #   ports:
+  #     - "3000:3000"
+  #   environment:
+  #     - NEXT_PUBLIC_API_URL=http://localhost:3001
+  #   depends_on:
+  #     - lulc-backend
