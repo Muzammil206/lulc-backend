@@ -33,8 +33,6 @@ COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/src ./src
 
 
-# Copy .env file (optional - can also pass via docker run -e)
-COPY .env* ./
 
 # Expose port
 EXPOSE 3001
