@@ -17,7 +17,7 @@ RUN bun install --frozen-lockfile
 
 # Copy source code
 COPY src ./src
-COPY gee-service-account.json ./
+
 
 # ── Stage 2: Runtime ────────────────────────────────────────
 FROM oven/bun:latest
@@ -31,7 +31,7 @@ RUN apt-get update && apt-get install -y dumb-init && rm -rf /var/lib/apt/lists/
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/src ./src
-COPY --from=builder /app/gee-service-account.json ./gee-service-account.json
+
 
 # Copy .env file (optional - can also pass via docker run -e)
 COPY .env* ./
