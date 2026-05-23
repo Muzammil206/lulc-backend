@@ -14,42 +14,61 @@ let isInitialised = false
 // ── AOI registry ─────────────────────────────────────────────
 // Add more locations here as you expand the platform.
 // Each entry has a centre point + optional custom buffer.
+// ── AOI Registry — All 36 Nigerian States + FCT + key LGAs ─
+// bufferM is scaled to state size so the whole capital region fits
 export const AOI_REGISTRY = {
-  'ogidi-ilorin-west': {
-    label: 'Ogidi, Ilorin West LGA',
-    state: 'Kwara',
-    lat: 8.517,
-    lng: 4.500,
-    bufferM: 15000,
-  },
-  'ilorin-metro': {
-    label: 'Ilorin Metropolitan Area',
-    state: 'Kwara',
-    lat: 8.4966,
-    lng: 4.5421,
-    bufferM: 25000,
-  },
-  'lagos-island': {
-    label: 'Lagos Island LGA',
-    state: 'Lagos',
-    lat: 6.4550,
-    lng: 3.3841,
-    bufferM: 15000,
-  },
-  'abuja-municipal': {
-    label: 'Abuja Municipal Area',
-    state: 'FCT',
-    lat: 9.0579,
-    lng: 7.4951,
-    bufferM: 20000,
-  },
-  'kano-municipal': {
-    label: 'Kano Municipal LGA',
-    state: 'Kano',
-    lat: 12.0022,
-    lng: 8.5920,
-    bufferM: 20000,
-  },
+
+  // ── Featured LGAs (most detailed) ──────────────────────
+  'ogidi-ilorin-west': { label:'Ogidi, Ilorin West LGA', state:'Kwara', zone:'North Central', lat:8.517,  lng:4.500,  bufferM:15000 },
+
+  // ── North West ─────────────────────────────────────────
+  'jigawa':    { label:'Jigawa State',     state:'Jigawa',     zone:'North West',    lat:11.757, lng:9.342,  bufferM:40000 },
+  'kaduna':    { label:'Kaduna State',     state:'Kaduna',     zone:'North West',    lat:10.524, lng:7.440,  bufferM:55000 },
+  'kano':      { label:'Kano State',       state:'Kano',       zone:'North West',    lat:11.997, lng:8.576,  bufferM:45000 },
+  'katsina':   { label:'Katsina State',    state:'Katsina',    zone:'North West',    lat:12.989, lng:7.615,  bufferM:45000 },
+  'kebbi':     { label:'Kebbi State',      state:'Kebbi',      zone:'North West',    lat:12.460, lng:4.197,  bufferM:50000 },
+  'sokoto':    { label:'Sokoto State',     state:'Sokoto',     zone:'North West',    lat:13.056, lng:5.244,  bufferM:45000 },
+  'zamfara':   { label:'Zamfara State',    state:'Zamfara',    zone:'North West',    lat:12.163, lng:6.664,  bufferM:50000 },
+
+  // ── North East ─────────────────────────────────────────
+  'adamawa':   { label:'Adamawa State',    state:'Adamawa',    zone:'North East',    lat:9.204,  lng:12.496, bufferM:55000 },
+  'bauchi':    { label:'Bauchi State',     state:'Bauchi',     zone:'North East',    lat:10.312, lng:9.843,  bufferM:55000 },
+  'borno':     { label:'Borno State',      state:'Borno',      zone:'North East',    lat:11.841, lng:13.151, bufferM:65000 },
+  'gombe':     { label:'Gombe State',      state:'Gombe',      zone:'North East',    lat:10.291, lng:11.167, bufferM:40000 },
+  'taraba':    { label:'Taraba State',     state:'Taraba',     zone:'North East',    lat:8.883,  lng:11.373, bufferM:55000 },
+  'yobe':      { label:'Yobe State',       state:'Yobe',       zone:'North East',    lat:11.748, lng:11.961, bufferM:55000 },
+
+  // ── North Central ──────────────────────────────────────
+  'benue':     { label:'Benue State',      state:'Benue',      zone:'North Central', lat:7.731,  lng:8.521,  bufferM:50000 },
+  'fct':       { label:'FCT Abuja',        state:'FCT',        zone:'North Central', lat:9.057,  lng:7.495,  bufferM:25000 },
+  'kogi':      { label:'Kogi State',       state:'Kogi',       zone:'North Central', lat:7.801,  lng:6.741,  bufferM:50000 },
+  'kwara':     { label:'Kwara State',      state:'Kwara',      zone:'North Central', lat:8.497,  lng:4.542,  bufferM:50000 },
+  'nasarawa':  { label:'Nasarawa State',   state:'Nasarawa',   zone:'North Central', lat:8.491,  lng:8.521,  bufferM:45000 },
+  'niger':     { label:'Niger State',      state:'Niger',      zone:'North Central', lat:9.614,  lng:6.556,  bufferM:65000 },
+  'plateau':   { label:'Plateau State',    state:'Plateau',    zone:'North Central', lat:9.896,  lng:8.858,  bufferM:50000 },
+
+  // ── South West ─────────────────────────────────────────
+  'ekiti':     { label:'Ekiti State',      state:'Ekiti',      zone:'South West',    lat:7.622,  lng:5.221,  bufferM:22000 },
+  'lagos':     { label:'Lagos State',      state:'Lagos',      zone:'South West',    lat:6.453,  lng:3.396,  bufferM:18000 },
+  'ogun':      { label:'Ogun State',       state:'Ogun',       zone:'South West',    lat:7.156,  lng:3.346,  bufferM:40000 },
+  'ondo':      { label:'Ondo State',       state:'Ondo',       zone:'South West',    lat:7.252,  lng:5.195,  bufferM:40000 },
+  'osun':      { label:'Osun State',       state:'Osun',       zone:'South West',    lat:7.767,  lng:4.557,  bufferM:28000 },
+  'oyo':       { label:'Oyo State',        state:'Oyo',        zone:'South West',    lat:7.388,  lng:3.900,  bufferM:50000 },
+
+  // ── South East ─────────────────────────────────────────
+  'abia':      { label:'Abia State',       state:'Abia',       zone:'South East',    lat:5.529,  lng:7.486,  bufferM:22000 },
+  'anambra':   { label:'Anambra State',    state:'Anambra',    zone:'South East',    lat:6.210,  lng:7.068,  bufferM:20000 },
+  'ebonyi':    { label:'Ebonyi State',     state:'Ebonyi',     zone:'South East',    lat:6.325,  lng:8.113,  bufferM:22000 },
+  'enugu':     { label:'Enugu State',      state:'Enugu',      zone:'South East',    lat:6.441,  lng:7.499,  bufferM:25000 },
+  'imo':       { label:'Imo State',        state:'Imo',        zone:'South East',    lat:5.485,  lng:7.026,  bufferM:22000 },
+
+  // ── South South ────────────────────────────────────────
+  'akwa-ibom': { label:'Akwa Ibom State',  state:'Akwa Ibom',  zone:'South South',   lat:5.053,  lng:7.936,  bufferM:25000 },
+  'bayelsa':   { label:'Bayelsa State',    state:'Bayelsa',    zone:'South South',   lat:4.926,  lng:6.262,  bufferM:28000 },
+  'cross-river':{ label:'Cross River State',state:'Cross River',zone:'South South',  lat:4.951,  lng:8.322,  bufferM:40000 },
+  'delta':     { label:'Delta State',      state:'Delta',      zone:'South South',   lat:6.198,  lng:6.734,  bufferM:38000 },
+  'edo':       { label:'Edo State',        state:'Edo',        zone:'South South',   lat:6.338,  lng:5.627,  bufferM:38000 },
+  'rivers':    { label:'Rivers State',     state:'Rivers',     zone:'South South',   lat:4.815,  lng:7.049,  bufferM:30000 },
 }
 
 // ── LULC class definitions ───────────────────────────────────
@@ -74,17 +93,37 @@ export const YEAR_RANGE = { min: 2000, max: 2024 }
 export async function initGEE() {
   if (isInitialised) return
 
-  const keyFilePath = path.resolve(process.env.GEE_KEY_FILE || './gee-service-account.json')
+  let key
 
-  if (!fs.existsSync(keyFilePath)) {
-    throw new Error(
-      `GEE service account key not found at: ${keyFilePath}\n` +
-      'Download it from Google Cloud Console → IAM → Service Accounts → Keys\n' +
-      'Then set GEE_KEY_FILE in your .env file'
-    )
+  // ── Strategy 1: GEE_KEY_JSON env var (Render / Railway / any PaaS)
+  // In your hosting dashboard, add an env var:
+  //   Name:  GEE_KEY_JSON
+  //   Value: (paste the entire contents of gee-service-account.json)
+  // This avoids uploading the file to the server entirely.
+  if (process.env.GEE_KEY_JSON) {
+    try {
+      key = JSON.parse(process.env.GEE_KEY_JSON)
+      console.log('GEE credentials loaded from GEE_KEY_JSON env var')
+    } catch (e) {
+      throw new Error('GEE_KEY_JSON is set but contains invalid JSON. Paste the raw file contents.')
+    }
+
+  // ── Strategy 2: GEE_KEY_FILE path (local development)
+  } else {
+    const keyFilePath = path.resolve(process.env.GEE_KEY_FILE || './gee-service-account.json')
+    if (!fs.existsSync(keyFilePath)) {
+      throw new Error(
+        'GEE credentials not found.\n\n' +
+        'FOR RENDER/RAILWAY DEPLOYMENT:\n' +
+        '  Add env var: GEE_KEY_JSON = (entire contents of gee-service-account.json)\n\n' +
+        'FOR LOCAL DEVELOPMENT:\n' +
+        '  Place gee-service-account.json in the project root\n' +
+        '  Or set GEE_KEY_FILE=/path/to/key.json in .env'
+      )
+    }
+    key = JSON.parse(fs.readFileSync(keyFilePath, 'utf8'))
+    console.log('GEE credentials loaded from file:', keyFilePath)
   }
-
-  const key = JSON.parse(fs.readFileSync(keyFilePath, 'utf8'))
 
   return new Promise((resolve, reject) => {
     // Authenticate with service account
