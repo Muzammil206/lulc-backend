@@ -26,7 +26,7 @@ const fastify = Fastify({
 
 await fastify.register(cors, {
   origin: [
-    process.env.FRONTEND_URL || 'http://localhost:3000',
+    process.env.FRONTEND_URL,
     // Add your production Vercel URL here when deployed:
     'https://lulc.naviss.tech/'
 

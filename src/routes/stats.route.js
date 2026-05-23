@@ -17,7 +17,7 @@ export default async function statsRoute(fastify) {
 
     fastify.log.info(`Computing national stats: ${year1} vs ${year2}`)
 
-    const mask = img => {
+    const maskL8 = img => {
       const qa = img.select('QA_PIXEL')
       return img.updateMask(qa.bitwiseAnd(1<<3).eq(0).and(qa.bitwiseAnd(1<<5).eq(0)))
         .select(['SR_B2','SR_B3','SR_B4','SR_B5','SR_B6','SR_B7'])
@@ -30,8 +30,8 @@ export default async function statsRoute(fastify) {
     ])
     const getComp = (year, aoi) => {
       const col = Number(year) >= 2013
-        ? ee.ImageCollection('LANDSAT/LC08/C02/T1_L2').filterBounds(aoi).filterDate(`${year}-01-01`,`${year}-12-31`).filter(ee.Filter.lt('CLOUD_COVER',30)).map(mask).map(addIdx)
-        : ee.ImageCollection('LANDSAT/LE07/C02/T1_L2').filterBounds(aoi).filterDate(`${year}-01-01`,`${year}-12-31`).filter(ee.Filter.lt('CLOUD_COVER',30)).map(mask).map(addIdx)
+        ? ee.ImageCollection('LANDSAT/LC08/C02/T1_L2').filterBounds(aoi).filterDate(`${year}-01-01`,`${year}-12-31`).filter(ee.Filter.lt('CLOUD_COVER',30)).map(maskL8).map(addIdx)
+        : ee.ImageCollection('LANDSAT/LE07/C02/T1_L2').filterBounds(aoi).filterDate(`${year}-01-01`,`${year}-12-31`).filter(ee.Filter.lt('CLOUD_COVER',30)).map(maskL7).map(addIdx)
       return col.median().clip(aoi)
     }
 

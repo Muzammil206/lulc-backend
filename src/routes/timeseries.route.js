@@ -10,20 +10,45 @@ import { makeCacheKey, cacheGet, cacheSet } from '../services/cache.service.js'
 function buildComposite(year, aoi) {
   const start = `${year}-01-01`
   const end   = `${year}-12-31`
-  const mask  = img => {
+
+  // Landsat 8/9 Collection 2 Surface Reflectance band names
+  const maskL8 = img => {
     const qa = img.select('QA_PIXEL')
     return img.updateMask(qa.bitwiseAnd(1<<3).eq(0).and(qa.bitwiseAnd(1<<5).eq(0)))
       .select(['SR_B2','SR_B3','SR_B4','SR_B5','SR_B6','SR_B7'])
       .multiply(0.0000275).add(-0.2)
   }
+
+  // Landsat 7 Collection 2 Surface Reflectance band names
+  // L7 C2 SR bands: B1=Blue B2=Green B3=Red B4=NIR B5=SWIR1 B7=SWIR2
+  // NOTE: There is NO SR_B6 on L7 C2 — that slot is thermal (ST_B6)
+  // We rename to match L8 naming so downstream band lists stay consistent
+  const maskL7 = img => {
+    const qa = img.select('QA_PIXEL')
+    return img.updateMask(qa.bitwiseAnd(1<<3).eq(0).and(qa.bitwiseAnd(1<<5).eq(0)))
+      .select(
+        ['SR_B1','SR_B2','SR_B3','SR_B4','SR_B5','SR_B7'],
+        ['SR_B2','SR_B3','SR_B4','SR_B5','SR_B6','SR_B7']  // rename to L8 convention
+      )
+      .multiply(0.0000275).add(-0.2)
+  }
+
   const addIdx = img => img.addBands([
     img.normalizedDifference(['SR_B5','SR_B4']).rename('NDVI'),
     img.normalizedDifference(['SR_B3','SR_B5']).rename('NDWI'),
     img.normalizedDifference(['SR_B6','SR_B5']).rename('NDBI'),
   ])
+
   const col = year >= 2013
-    ? ee.ImageCollection('LANDSAT/LC08/C02/T1_L2').filterBounds(aoi).filterDate(start,end).filter(ee.Filter.lt('CLOUD_COVER',30)).map(mask).map(addIdx)
-    : ee.ImageCollection('LANDSAT/LE07/C02/T1_L2').filterBounds(aoi).filterDate(start,end).filter(ee.Filter.lt('CLOUD_COVER',30)).map(mask).map(addIdx)
+    ? ee.ImageCollection('LANDSAT/LC08/C02/T1_L2')
+        .filterBounds(aoi).filterDate(start,end)
+        .filter(ee.Filter.lt('CLOUD_COVER',30))
+        .map(maskL8).map(addIdx)
+    : ee.ImageCollection('LANDSAT/LE07/C02/T1_L2')
+        .filterBounds(aoi).filterDate(start,end)
+        .filter(ee.Filter.lt('CLOUD_COVER',30))
+        .map(maskL7).map(addIdx)
+
   return col.median().clip(aoi)
 }
 
