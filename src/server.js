@@ -36,7 +36,7 @@ const fastify = Fastify({
 // Allow requests from the Next.js frontend
 await fastify.register(cors, {
   origin: [
-    process.env.FRONTEND_URL || 'http://localhost:3000',
+    process.env.FRONTEND_URL ||  'http://localhost:3000',
     // Add your production Vercel URL here when deployed:
     // 'https://your-lulc-app.vercel.app',
   ],
