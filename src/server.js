@@ -39,6 +39,7 @@ await fastify.register(cors, {
     process.env.FRONTEND_URL ||  'http://localhost:3000',
     // Add your production Vercel URL here when deployed:
      'https://lulc-vert.vercel.app',
+     'https://lulc.naviss.tech/'
   ],
   methods: ['GET', 'POST', 'OPTIONS'],
 })
