@@ -4,7 +4,7 @@
 // Used by the frontend time series chart.
 // ============================================================
 import ee from '@google/earthengine'
-import { AOI_REGISTRY, LULC_CLASSES } from '../services/gee.service.js'
+import { getAoiRegistry, getAoiGeometry, LULC_CLASSES } from '../services/gee.service.js'
 import { makeCacheKey, cacheGet, cacheSet } from '../services/cache.service.js'
 
 function buildComposite(year, aoi) {
@@ -65,7 +65,7 @@ function trainClassifier(comp, aoi) {
 export default async function timeseriesRoute(fastify) {
   fastify.get('/timeseries', async (req, reply) => {
     const { aoiKey, startYear='2000', endYear='2024' } = req.query
-    if (!aoiKey || !AOI_REGISTRY[aoiKey]) {
+    if (!aoiKey || !getAoiRegistry()[aoiKey]) {
       return reply.code(400).send({ error: `Unknown aoiKey: "${aoiKey}"` })
     }
 
@@ -76,8 +76,8 @@ export default async function timeseriesRoute(fastify) {
     if (hit) return reply.send({ ...hit, cached: true })
 
     fastify.log.info(`Timeseries: ${key}`)
-    const meta   = AOI_REGISTRY[aoiKey]
-    const aoi    = ee.Geometry.Point([meta.lng, meta.lat]).buffer(meta.bufferM)
+    const meta   = getAoiRegistry()[aoiKey]
+    const aoi    = getAoiGeometry(aoiKey)
     const bands  = ['SR_B2','SR_B3','SR_B4','SR_B5','SR_B6','SR_B7','NDVI','NDWI','NDBI']
     const pixArea = ee.Image.pixelArea().divide(1e6)
 
@@ -92,12 +92,18 @@ export default async function timeseriesRoute(fastify) {
     const computeYear = year => {
       const comp       = buildComposite(year, aoi)
       const classified = comp.select(bands).classify(classifier)
-      const stats      = LULC_CLASSES.map(({ id, name, color }) => {
-        const area = pixArea.updateMask(classified.eq(id))
-          .reduceRegion({ reducer: ee.Reducer.sum(), geometry: aoi, scale: 30, maxPixels: 1e9, tileScale: 2 })
-        return ee.Feature(null, { year, classId: id, name, color, areaKm2: area.get('area') })
-      })
-      return ee.FeatureCollection(stats)
+      const runScale = meta.type === 'state' ? 120 : 30
+      const runTileScale = meta.type === 'state' ? 4 : 2
+      const groups     = pixArea.addBands(classified).reduceRegion({
+        reducer: ee.Reducer.sum().group({ groupField: 1, groupName: 'class' }),
+        geometry: aoi,
+        scale: runScale,
+        maxPixels: 1e9,
+        tileScale: runTileScale
+      }).get('groups')
+      return ee.FeatureCollection([
+        ee.Feature(null, { year, groups })
+      ])
     }
 
     // Merge all years into one FeatureCollection
@@ -109,10 +115,25 @@ export default async function timeseriesRoute(fastify) {
 
     // Shape into { year: { className: areaKm2 } }
     const byYear = {}
+    for (let y = y1; y <= y2; y++) {
+      byYear[y] = { year: y }
+      for (const cls of LULC_CLASSES) {
+        byYear[y][cls.name] = 0
+      }
+    }
+
+    const getAreaFromGroups = (groups, classId) => {
+      if (!Array.isArray(groups)) return 0
+      const found = groups.find(g => g.class === classId)
+      return found ? found.sum : 0
+    }
+
     for (const f of info.features) {
-      const { year, name, areaKm2 } = f.properties
-      if (!byYear[year]) byYear[year] = { year }
-      byYear[year][name] = Number((areaKm2 || 0).toFixed(2))
+      const { year, groups } = f.properties
+      for (const cls of LULC_CLASSES) {
+        const area = getAreaFromGroups(groups, cls.id)
+        byYear[year][cls.name] = Number(area.toFixed(2))
+      }
     }
 
     const series = Object.values(byYear).sort((a, b) => a.year - b.year)

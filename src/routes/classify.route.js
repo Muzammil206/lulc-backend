@@ -8,7 +8,7 @@
 // expensive GEE computations on repeated requests.
 // ============================================================
 
-import { classifyLULC, AOI_REGISTRY, YEAR_RANGE } from '../services/gee.service.js'
+import { classifyLULC, getAoiRegistry, YEAR_RANGE } from '../services/gee.service.js'
 import { makeCacheKey, cacheGet, cacheSet }        from '../services/cache.service.js'
 
 export default async function classifyRoute(fastify) {
@@ -49,10 +49,10 @@ export default async function classifyRoute(fastify) {
       })
     }
 
-    if (!AOI_REGISTRY[aoiKey]) {
+    if (!getAoiRegistry()[aoiKey]) {
       return reply.code(400).send({
         error: `Unknown aoiKey: "${aoiKey}"`,
-        validKeys: Object.keys(AOI_REGISTRY),
+        validKeys: Object.keys(getAoiRegistry()),
       })
     }
 

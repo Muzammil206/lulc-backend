@@ -1,11 +1,11 @@
 // src/routes/aoi.route.js
-import { AOI_REGISTRY, YEAR_RANGE } from '../services/gee.service.js'
+import { getAoiRegistry, YEAR_RANGE } from '../services/gee.service.js'
 
 export default async function aoiRoute(fastify) {
 
   // GET /api/aoi — all locations grouped by geopolitical zone
   fastify.get('/aoi', async (request, reply) => {
-    const locations = Object.entries(AOI_REGISTRY).map(([key, meta]) => ({
+    const locations = Object.entries(getAoiRegistry()).map(([key, meta]) => ({
       key,
       label:   meta.label,
       state:   meta.state,
@@ -32,11 +32,11 @@ export default async function aoiRoute(fastify) {
   // GET /api/aoi/:key — single location details
   fastify.get('/aoi/:key', async (request, reply) => {
     const { key } = request.params
-    const meta    = AOI_REGISTRY[key]
+    const meta    = getAoiRegistry()[key]
     if (!meta) {
       return reply.code(404).send({
         error: `AOI not found: "${key}"`,
-        validKeys: Object.keys(AOI_REGISTRY),
+        validKeys: Object.keys(getAoiRegistry()),
       })
     }
     return reply.send({ key, ...meta, yearRange: YEAR_RANGE })

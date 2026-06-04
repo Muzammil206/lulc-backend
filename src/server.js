@@ -5,7 +5,7 @@ import 'dotenv/config'
 import Fastify    from 'fastify'
 import cors       from '@fastify/cors'
 
-import { initGEE }              from './services/gee.service.js'
+import { initGEE, populateDynamicRegistry } from './services/gee.service.js'
 import { registerErrorHandler } from './middleware/errorHandler.js'
 import healthRoute      from './routes/health.route.js'
 import aoiRoute         from './routes/aoi.route.js'
@@ -49,6 +49,7 @@ async function start() {
   try {
     console.log('Initialising Google Earth Engine…')
     await initGEE()
+    await populateDynamicRegistry()
 
     const port = Number(process.env.PORT || 3001)
     const host = process.env.HOST || '0.0.0.0'

@@ -3,7 +3,7 @@
 // GET  /api/export/:id — poll task status
 // ============================================================
 import ee from '@google/earthengine'
-import { AOI_REGISTRY, LULC_CLASSES } from '../services/gee.service.js'
+import { getAoiRegistry, getAoiGeometry, LULC_CLASSES } from '../services/gee.service.js'
 
 // In-memory task store (use Redis in production)
 const tasks = new Map()
@@ -45,7 +45,7 @@ export default async function exportRoute(fastify) {
     if (!aoiKey || !year) {
       return reply.code(400).send({ error: 'aoiKey and year required' })
     }
-    const meta = AOI_REGISTRY[aoiKey]
+    const meta = getAoiRegistry()[aoiKey]
     if (!meta) return reply.code(400).send({ error: `Unknown aoiKey: "${aoiKey}"` })
 
     const taskId = `${aoiKey}-${year}-${Date.now()}`
@@ -54,7 +54,7 @@ export default async function exportRoute(fastify) {
     // Kick off async export
     ;(async () => {
       try {
-        const aoi    = ee.Geometry.Point([meta.lng, meta.lat]).buffer(meta.bufferM)
+        const aoi    = getAoiGeometry(aoiKey)
         const bands  = ['SR_B2','SR_B3','SR_B4','SR_B5','SR_B6','SR_B7','NDVI','NDWI','NDBI']
         const comp   = buildComposite(year, aoi)
         const wc     = ee.ImageCollection('ESA/WorldCover/v200').first().clip(aoi)

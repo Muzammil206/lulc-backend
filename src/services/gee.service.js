@@ -71,6 +71,139 @@ export const AOI_REGISTRY = {
   'rivers':    { label:'Rivers State',     state:'Rivers',     zone:'South South',   lat:4.815,  lng:7.049,  bufferM:30000 },
 }
 
+// ── State to Geopolitical Zone mapping ───────────────────────
+const STATE_TO_ZONE = {
+  'Abia': 'South East', 'Anambra': 'South East', 'Ebonyi': 'South East', 'Enugu': 'South East', 'Imo': 'South East',
+  'Adamawa': 'North East', 'Bauchi': 'North East', 'Borno': 'North East', 'Gombe': 'North East', 'Taraba': 'North East', 'Yobe': 'North East',
+  'Akwa Ibom': 'South South', 'Bayelsa': 'South South', 'Cross River': 'South South', 'Delta': 'South South', 'Edo': 'South South', 'Rivers': 'South South',
+  'Benue': 'North Central', 'Federal Capital Territory (FCT)': 'North Central', 'Kogi': 'North Central', 'Kwara': 'North Central', 'Nassarawa': 'North Central', 'Nasarawa': 'North Central', 'Niger': 'North Central', 'Plateau': 'North Central', 'Abuja': 'North Central',
+  'Ekiti': 'South West', 'Lagos': 'South West', 'Ogun': 'South West', 'Ondo': 'South West', 'Osun': 'South West', 'Oyo': 'South West',
+  'Jigawa': 'North West', 'Kaduna': 'North West', 'Kano': 'North West', 'Katsina': 'North West', 'Kebbi': 'North West', 'Sokoto': 'North West', 'Zamfara': 'North West'
+}
+
+// ── Dynamic AOI Registry ─────────────────────────────────────
+export let DYNAMIC_AOI_REGISTRY = { ...AOI_REGISTRY }
+
+export function getAoiRegistry() {
+  return DYNAMIC_AOI_REGISTRY
+}
+
+export function getAoiGeometry(aoiKey) {
+  const meta = DYNAMIC_AOI_REGISTRY[aoiKey]
+  if (!meta) {
+    throw new Error(`Unknown AOI key: "${aoiKey}"`)
+  }
+
+  if (meta.type === 'state') {
+    return ee.FeatureCollection('FAO/GAUL/2015/level1')
+      .filter(ee.Filter.eq('ADM1_CODE', meta.code))
+      .geometry()
+      .simplify(100)
+  }
+
+  if (meta.type === 'lga') {
+    return ee.FeatureCollection('FAO/GAUL/2015/level2')
+      .filter(ee.Filter.eq('ADM2_CODE', meta.code))
+      .geometry()
+      .simplify(50)
+  }
+
+  // Fallback: Custom featured AOI (circular buffer)
+  const bufferM = meta.bufferM || Number(process.env.DEFAULT_BUFFER_METRES || 15000)
+  return ee.Geometry.Point([meta.lng, meta.lat]).buffer(bufferM)
+}
+
+export async function populateDynamicRegistry() {
+  console.log('Populating dynamic AOI registry from GEE (Nigeria States & LGAs)…')
+  try {
+    // 1. Fetch States (Level 1)
+    const stateCol = ee.FeatureCollection('FAO/GAUL/2015/level1')
+      .filter(ee.Filter.eq('ADM0_CODE', 182))
+
+    const stateCentroids = stateCol.map(f => {
+      const centroid = f.geometry().centroid(100)
+      return ee.Feature(null, {
+        name: f.get('ADM1_NAME'),
+        code: f.get('ADM1_CODE'),
+        lng: centroid.coordinates().get(0),
+        lat: centroid.coordinates().get(1)
+      })
+    })
+
+    // 2. Fetch LGAs (Level 2)
+    const lgaCol = ee.FeatureCollection('FAO/GAUL/2015/level2')
+      .filter(ee.Filter.eq('ADM0_CODE', 182))
+
+    const lgaCentroids = lgaCol.map(f => {
+      const centroid = f.geometry().centroid(100)
+      return ee.Feature(null, {
+        name: f.get('ADM2_NAME'),
+        stateName: f.get('ADM1_NAME'),
+        code: f.get('ADM2_CODE'),
+        lng: centroid.coordinates().get(0),
+        lat: centroid.coordinates().get(1)
+      })
+    })
+
+    const [stateInfo, lgaInfo] = await Promise.all([
+      new Promise((res, rej) =>
+        stateCentroids.getInfo((data, err) => err ? rej(new Error(String(err))) : res(data))
+      ),
+      new Promise((res, rej) =>
+        lgaCentroids.getInfo((data, err) => err ? rej(new Error(String(err))) : res(data))
+      )
+    ])
+
+    const newRegistry = { ...AOI_REGISTRY }
+
+    // Add States
+    for (const f of stateInfo.features) {
+      const p = f.properties
+      const name = p.name || ''
+      const code = p.code
+      const key = `state-${name.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${code}`
+      const zone = STATE_TO_ZONE[name] || 'Other'
+      newRegistry[key] = {
+        key,
+        label: `${name} State`,
+        state: name,
+        zone,
+        lat: p.lat,
+        lng: p.lng,
+        type: 'state',
+        code: code
+      }
+    }
+
+    // Add LGAs
+    for (const f of lgaInfo.features) {
+      const p = f.properties
+      const name = p.name || ''
+      const stateName = p.stateName || ''
+      const code = p.code
+      const key = `lga-${name.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${code}`
+      const zone = STATE_TO_ZONE[stateName] || 'Other'
+      newRegistry[key] = {
+        key,
+        label: `${name} LGA (${stateName})`,
+        state: stateName,
+        zone,
+        lat: p.lat,
+        lng: p.lng,
+        type: 'lga',
+        code: code
+      }
+    }
+
+    DYNAMIC_AOI_REGISTRY = newRegistry
+    console.log(`✓ Dynamic AOI registry populated: ${Object.keys(DYNAMIC_AOI_REGISTRY).length} total areas (States & LGAs)`)
+  } catch (err) {
+    console.error('Failed to populate dynamic AOI registry, falling back to static list:', err.message)
+    DYNAMIC_AOI_REGISTRY = { ...AOI_REGISTRY }
+  }
+}
+
+
 // ── LULC class definitions ───────────────────────────────────
 export const LULC_CLASSES = [
   { id: 0, name: 'Forest',   color: '#2e7d32' },
@@ -299,9 +432,9 @@ function computeAreaStats(classified, aoi, year) {
 // ============================================================
 export async function classifyLULC({ aoiKey, year1, year2 }) {
   // Validate AOI
-  const aoiMeta = AOI_REGISTRY[aoiKey]
+  const aoiMeta = DYNAMIC_AOI_REGISTRY[aoiKey]
   if (!aoiMeta) {
-    throw new Error(`Unknown AOI key: "${aoiKey}". Valid keys: ${Object.keys(AOI_REGISTRY).join(', ')}`)
+    throw new Error(`Unknown AOI key: "${aoiKey}". Valid keys: ${Object.keys(DYNAMIC_AOI_REGISTRY).join(', ')}`)
   }
 
   // Validate years
@@ -310,8 +443,8 @@ export async function classifyLULC({ aoiKey, year1, year2 }) {
     throw new Error(`Years must be between ${YEAR_RANGE.min} and ${YEAR_RANGE.max}`)
   }
 
-  const bufferM = aoiMeta.bufferM || Number(process.env.DEFAULT_BUFFER_METRES || 15000)
-  const aoi     = ee.Geometry.Point([aoiMeta.lng, aoiMeta.lat]).buffer(bufferM)
+  const aoi     = getAoiGeometry(aoiKey)
+  const bufferM = aoiMeta.bufferM || 0
 
   const bands   = ['SR_B2', 'SR_B3', 'SR_B4', 'SR_B5', 'SR_B6', 'SR_B7',
                    'NDVI', 'NDWI', 'NDBI']
